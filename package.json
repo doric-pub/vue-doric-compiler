@@ -26,7 +26,8 @@
   "homepage": "https://doric.pub",
   "dependencies": {
     "commander": "^9.3.0",
-    "vue": "^3.2.37"
+    "vue": "^2.7.3",
+    "vue-template-compiler": "^2.7.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
