@@ -4,7 +4,7 @@
   "description": "Compile vue template to doric",
   "main": "dist/index.js",
   "bin": {
-    "doric": "dist/index.js"
+    "vue2doric": "dist/index.js"
   },
   "scripts": {
     "start": "tsc && node dist/index.js",
@@ -25,7 +25,8 @@
   },
   "homepage": "https://doric.pub",
   "dependencies": {
-    "commander": "^9.3.0"
+    "commander": "^9.3.0",
+    "vue": "^3.2.37"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
