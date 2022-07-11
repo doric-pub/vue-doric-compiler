@@ -3,7 +3,6 @@
 import { Command } from "commander";
 import path from "path";
 import { compile } from "./compiler";
-
 const program = new Command();
 (process.env.FORCE_COLOR as any) = true;
 program
