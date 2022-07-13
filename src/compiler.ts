@@ -16,6 +16,7 @@ type AST = {
   parent?: AST;
   children?: AST[];
   static?: boolean;
+  level: number;
 };
 export async function compile(vueFile: string) {
   const source = await fs.promises.readFile(vueFile, "utf-8");
@@ -32,6 +33,16 @@ export async function compile(vueFile: string) {
     filename: path.basename(vueFile),
     prettify: true,
     bindings: scriptBlock ? scriptBlock.bindings : undefined,
+    compilerOptions: {
+      modules: [
+        {
+          transformCode: (el, code) => {
+            console.log(el, code);
+            return code;
+          },
+        },
+      ],
+    },
   });
   descriptor.styles.forEach((style, index) => {
     const styleBlock = compileStyle({
@@ -43,22 +54,32 @@ export async function compile(vueFile: string) {
   });
   const ast = templateBlock.ast;
   if (!!ast) {
-    printAST(ast as AST);
+    //(ast as AST).level = 0;
+    //printAST(ast as AST);
   }
-  const code = `
+  await fs.promises.writeFile(
+    path.resolve("out.js"),
+    templateBlock.code,
+    "utf-8"
+  );
 
-  ${templateBlock.code}
-  `;
+  // const glueCodePath = path.resolve(__dirname, "glue.js");
+  // const glueCode = await fs.promises.readFile(glueCodePath, "utf-8");
+  // const code = `${templateBlock.code}
+  // ${glueCode}
+  // `;
 
-  await fs.promises.writeFile(path.resolve("out.js"), code, "utf-8");
-  console.log("Code", code);
-  eval(code);
+  // await fs.promises.writeFile(path.resolve("out.js"), code, "utf-8");
+  // eval(code);
 }
-
 function printAST(ast: AST) {
-  console.log(`${ast.type}:${ast.tag} ${ast.static ? "STATIC" : ""}`);
+  const copy = { ...ast };
+  copy.parent = undefined;
+  copy.children = undefined;
+  console.log(copy.level, copy);
   if (ast.children) {
     for (let child of ast.children) {
+      child.level = ast.level + 1;
       printAST(child);
     }
   }

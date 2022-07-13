@@ -25,10 +25,11 @@
   },
   "homepage": "https://doric.pub",
   "dependencies": {
+    "@vue/component-compiler-utils": "^3.3.0",
     "commander": "^9.3.0",
+    "prettier": "^2.7.1",
     "vue": "^2.7.3",
-    "vue-template-compiler": "^2.7.3",
-    "@vue/component-compiler-utils": "^3.3.0"
+    "vue-template-compiler": "^2.7.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
