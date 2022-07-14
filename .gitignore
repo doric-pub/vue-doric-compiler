@@ -4,3 +4,4 @@ node_modules/
 .settings/
 package-lock.json
 dist
+*.DS_Store
