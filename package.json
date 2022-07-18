@@ -11,6 +11,7 @@
     "clean": "rm -rf dist",
     "clean-win32": "del dist",
     "build": "tsc",
+    "transform": "tsc-alias",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublish": "npm run clean && npm run build"
   },
@@ -27,19 +28,21 @@
   "dependencies": {
     "@vue/component-compiler-utils": "^3.3.0",
     "@vue/consolidate": "^0.17.3",
-    "commander": "^9.3.0",
-    "estree-walker": "^3.0.1",
+    "commander": "^9.4.0",
+    "estree-walker": "2.0.2",
     "magic-string": "^0.26.2",
     "postcss": "^8.4.14",
     "prettier": "^2.7.1",
-    "vue": "^2.7.3",
-    "vue-template-compiler": "^2.7.3"
+    "vue": "^2.7.7",
+    "vue-template-compiler": "^2.7.7"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
     "@babel/types": "^7.18.8",
-    "@types/node": "^18.0.3"
+    "@types/node": "^18.0.6",
+    "tsc-alias": "^1.6.11",
+    "typescript": "^4.7.4"
   }
 }
