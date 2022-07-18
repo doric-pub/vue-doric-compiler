@@ -10,8 +10,7 @@
     "start": "tsc && node dist/index.js",
     "clean": "rm -rf dist",
     "clean-win32": "del dist",
-    "build": "tsc",
-    "transform": "tsc-alias",
+    "build": "tsc || tsc-alias",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublish": "npm run clean && npm run build"
   },
