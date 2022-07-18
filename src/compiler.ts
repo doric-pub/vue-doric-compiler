@@ -5,7 +5,7 @@ import {
   compileScript,
   compileTemplate,
   compileStyle,
-} from "vue/compiler-sfc";
+} from "./vue/compiler-sfc/src";
 
 type AST = {
   type: number;
