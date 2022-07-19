@@ -34,7 +34,7 @@ export default class DoricCodeGen {
     newLine: ts.NewLineKind.LineFeed,
   });
 
-  imports: Array<string> = ["Panel", "Group"];
+  imports: Array<string> = ["jsx", "Panel", "Group"];
 
   createImport() {
     const importSpecifiers = this.imports.map((value) => {

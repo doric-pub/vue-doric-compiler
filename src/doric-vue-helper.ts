@@ -71,12 +71,19 @@ export default class DoricVueHelper {
         block
       );
 
-      const result = DoricCodeGen.getInstance().printer.printNode(
+      const importResult = DoricCodeGen.getInstance().printer.printNode(
+        ts.EmitHint.Unspecified,
+        DoricCodeGen.getInstance().createImport(),
+        DoricCodeGen.getInstance().sourceFile
+      );
+      console.log(importResult);
+
+      const classResult = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
         classDeclaration,
         DoricCodeGen.getInstance().sourceFile
       );
-      console.log(result);
+      console.log(classResult);
     }
   }
 
@@ -85,6 +92,10 @@ export default class DoricVueHelper {
       if (child.type === 1) {
         return this.createJsxElementRecursive(child);
       } else if (child.type === 3) {
+        if (!DoricCodeGen.getInstance().imports.includes("Text")) {
+          DoricCodeGen.getInstance().imports.push("Text");
+        }
+
         return ts.factory.createJsxElement(
           ts.factory.createJsxOpeningElement(
             ts.factory.createIdentifier("Text"),
@@ -123,6 +134,11 @@ export default class DoricVueHelper {
     });
 
     if (DoricVueHelper.TAG_MAPPING[el.tag]) {
+      const key = DoricVueHelper.TAG_MAPPING[el.tag];
+      if (!DoricCodeGen.getInstance().imports.includes(key)) {
+        DoricCodeGen.getInstance().imports.push(key);
+      }
+
       const jsxAttributes = el.attrsList.map((attr) => {
         return ts.factory.createJsxAttribute(
           ts.factory.createIdentifier(attr.name),
@@ -149,13 +165,13 @@ export default class DoricVueHelper {
     } else {
       return ts.factory.createJsxElement(
         ts.factory.createJsxOpeningElement(
-          ts.factory.createIdentifier("doric-error-hint"),
+          ts.factory.createIdentifier("no-mapped-tags"),
           undefined,
           ts.factory.createJsxAttributes([])
         ),
         children,
         ts.factory.createJsxClosingElement(
-          ts.factory.createIdentifier("doric-error-hint")
+          ts.factory.createIdentifier("no-mapped-tags")
         )
       );
     }
