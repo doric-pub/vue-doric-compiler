@@ -1,5 +1,5 @@
 import { ASTElement } from "types/compiler";
-import ts, { createJsxElement } from "typescript";
+import ts, { JsxElement } from "typescript";
 import DoricCodeGen from "./doric-codegen";
 
 export default class DoricVueHelper {
@@ -25,11 +25,44 @@ export default class DoricVueHelper {
     return DoricVueHelper.instance;
   }
 
+  static TAG_MAPPING = {
+    div: "VLayout",
+    h1: "Stack",
+    h2: "Stack",
+    ul: "VLayout",
+    li: "VLayout",
+    a: "Stack",
+    br: "Stack",
+  };
+
   transformVueElement(el: ASTElement) {
     if (el.parent === undefined) {
       console.log(el);
 
-      const jsxRoot = this.createJsxElementRecursive(el);
+      let jsxRoot = this.createJsxElementRecursive(el);
+      const rootOpeningElement = ts.factory.updateJsxOpeningElement(
+        jsxRoot.openingElement,
+        jsxRoot.openingElement.tagName,
+        jsxRoot.openingElement.typeArguments,
+        ts.factory.createJsxAttributes([
+          ts.factory.createJsxAttribute(
+            ts.factory.createIdentifier("parent"),
+            ts.factory.createJsxExpression(
+              undefined,
+              ts.factory.createExpressionWithTypeArguments(
+                ts.factory.createIdentifier("root"),
+                undefined
+              )
+            )
+          ),
+        ])
+      );
+      jsxRoot = ts.factory.updateJsxElement(
+        jsxRoot,
+        rootOpeningElement,
+        jsxRoot.children,
+        jsxRoot.closingElement
+      );
 
       const statements = [ts.factory.createExpressionStatement(jsxRoot)];
       const block = ts.factory.createBlock(statements, true);
@@ -37,6 +70,7 @@ export default class DoricVueHelper {
         "Test",
         block
       );
+
       const result = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
         classDeclaration,
@@ -46,33 +80,84 @@ export default class DoricVueHelper {
     }
   }
 
-  createJsxElementRecursive(el: ASTElement) {
+  createJsxElementRecursive(el: ASTElement): JsxElement {
     const children = el.children.map((child) => {
       if (child.type === 1) {
         return this.createJsxElementRecursive(child);
+      } else if (child.type === 3) {
+        return ts.factory.createJsxElement(
+          ts.factory.createJsxOpeningElement(
+            ts.factory.createIdentifier("Text"),
+            undefined,
+            ts.factory.createJsxAttributes([
+              ts.factory.createJsxAttribute(
+                ts.factory.createIdentifier("text"),
+                ts.factory.createJsxExpression(
+                  undefined,
+                  ts.factory.createExpressionWithTypeArguments(
+                    ts.factory.createStringLiteral(child.text),
+                    undefined
+                  )
+                )
+              ),
+            ])
+          ),
+          [],
+          ts.factory.createJsxClosingElement(
+            ts.factory.createIdentifier("Text")
+          )
+        );
       } else {
         return ts.factory.createJsxElement(
           ts.factory.createJsxOpeningElement(
-            ts.factory.createIdentifier("empty-text"),
+            ts.factory.createIdentifier("no-implement"),
             undefined,
             ts.factory.createJsxAttributes([])
           ),
           [],
           ts.factory.createJsxClosingElement(
-            ts.factory.createIdentifier("empty-text")
+            ts.factory.createIdentifier("no-implement")
           )
         );
       }
     });
 
-    return ts.factory.createJsxElement(
-      ts.factory.createJsxOpeningElement(
-        ts.factory.createIdentifier(el.tag),
-        undefined,
-        ts.factory.createJsxAttributes([])
-      ),
-      children,
-      ts.factory.createJsxClosingElement(ts.factory.createIdentifier(el.tag))
-    );
+    if (DoricVueHelper.TAG_MAPPING[el.tag]) {
+      const jsxAttributes = el.attrsList.map((attr) => {
+        return ts.factory.createJsxAttribute(
+          ts.factory.createIdentifier(attr.name),
+          ts.factory.createJsxExpression(
+            undefined,
+            ts.factory.createExpressionWithTypeArguments(
+              ts.factory.createStringLiteral(attr.value),
+              undefined
+            )
+          )
+        );
+      });
+      return ts.factory.createJsxElement(
+        ts.factory.createJsxOpeningElement(
+          ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
+          undefined,
+          ts.factory.createJsxAttributes(jsxAttributes)
+        ),
+        children,
+        ts.factory.createJsxClosingElement(
+          ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag])
+        )
+      );
+    } else {
+      return ts.factory.createJsxElement(
+        ts.factory.createJsxOpeningElement(
+          ts.factory.createIdentifier("doric-error-hint"),
+          undefined,
+          ts.factory.createJsxAttributes([])
+        ),
+        children,
+        ts.factory.createJsxClosingElement(
+          ts.factory.createIdentifier("doric-error-hint")
+        )
+      );
+    }
   }
 }
