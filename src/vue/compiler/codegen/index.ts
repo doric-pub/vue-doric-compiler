@@ -14,6 +14,7 @@ import {
   CompilerOptions
 } from 'types/compiler'
 import { BindingMetadata } from 'sfc/types'
+import DoricVueHelper from '../../../doric-vue-helper'
 
 type TransformFunction = (el: ASTElement, code: string) => string
 type DataGenFunction = (el: ASTElement) => string
@@ -116,6 +117,12 @@ export function genElement(el: ASTElement, state: CodegenState): string {
       }${
         children ? `,${children}` : '' // children
       })`
+      // console.log("//#region")
+      // console.log("genElement");
+      // console.log(el)
+      // console.log(state)
+      // console.log("//#endregion")
+      DoricVueHelper.getInstance().transformVueElement(el)
     }
     // module transforms
     for (let i = 0; i < state.transforms.length; i++) {

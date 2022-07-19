@@ -37,7 +37,7 @@ export async function compile(vueFile: string) {
       modules: [
         {
           transformCode: (el, code) => {
-            console.log(el, code);
+            // console.log(el, code);
             return code;
           },
         },
