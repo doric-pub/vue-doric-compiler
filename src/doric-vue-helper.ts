@@ -1,6 +1,7 @@
 import { ASTElement } from "types/compiler";
 import ts, { JsxElement } from "typescript";
 import DoricCodeGen from "./doric-codegen";
+const prettier = require("prettier");
 
 export default class DoricVueHelper {
   private static instance: DoricVueHelper;
@@ -67,12 +68,14 @@ export default class DoricVueHelper {
       );
       console.log(importResult);
 
-      const classResult = DoricCodeGen.getInstance().printer.printNode(
+      const functionResult = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
         functionDeclaration,
         DoricCodeGen.getInstance().sourceFile
       );
-      console.log(classResult);
+      console.log(functionResult);
+
+      console.log(prettier.format(importResult + functionResult));
     }
   }
 
