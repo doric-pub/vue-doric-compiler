@@ -66,6 +66,19 @@ export default class DoricCodeGen {
     );
   }
 
+  createFunction(name: string, block: ts.Block) {
+    return ts.factory.createFunctionDeclaration(
+      undefined,
+      [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+      undefined,
+      name,
+      undefined,
+      undefined,
+      undefined,
+      block
+    );
+  }
+
   createClass(name: string, block: ts.Block) {
     return ts.factory.createClassDeclaration(
       [ts.factory.createDecorator(ts.factory.createIdentifier("Entry"))],

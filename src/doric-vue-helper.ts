@@ -44,18 +44,7 @@ export default class DoricVueHelper {
         jsxRoot.openingElement,
         jsxRoot.openingElement.tagName,
         jsxRoot.openingElement.typeArguments,
-        ts.factory.createJsxAttributes([
-          ts.factory.createJsxAttribute(
-            ts.factory.createIdentifier("parent"),
-            ts.factory.createJsxExpression(
-              undefined,
-              ts.factory.createExpressionWithTypeArguments(
-                ts.factory.createIdentifier("root"),
-                undefined
-              )
-            )
-          ),
-        ])
+        ts.factory.createJsxAttributes([])
       );
       jsxRoot = ts.factory.updateJsxElement(
         jsxRoot,
@@ -64,9 +53,9 @@ export default class DoricVueHelper {
         jsxRoot.closingElement
       );
 
-      const statements = [ts.factory.createExpressionStatement(jsxRoot)];
+      const statements = [ts.factory.createReturnStatement(jsxRoot)];
       const block = ts.factory.createBlock(statements, true);
-      const classDeclaration = DoricCodeGen.getInstance().createClass(
+      const functionDeclaration = DoricCodeGen.getInstance().createFunction(
         "Test",
         block
       );
@@ -80,7 +69,7 @@ export default class DoricVueHelper {
 
       const classResult = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
-        classDeclaration,
+        functionDeclaration,
         DoricCodeGen.getInstance().sourceFile
       );
       console.log(classResult);
