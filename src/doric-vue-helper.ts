@@ -35,6 +35,11 @@ export default class DoricVueHelper {
     li: "VLayout",
     a: "Stack",
     br: "Stack",
+    img: "Image",
+  };
+
+  static ATTRIBUTE_MAPPING = {
+    img: { src: "imageUrl" },
   };
 
   scriptBlock: SFCScriptBlock;
@@ -150,9 +155,17 @@ export default class DoricVueHelper {
         DoricCodeGen.getInstance().imports.push(key);
       }
 
-      const jsxAttributes = el.attrsList.map((attr) => {
+      let jsxAttributes = el.attrsList.map((attr) => {
+        let defaultName = attr.name;
+        if (
+          DoricVueHelper.ATTRIBUTE_MAPPING[el.tag] &&
+          DoricVueHelper.ATTRIBUTE_MAPPING[el.tag][attr.name]
+        ) {
+          defaultName = DoricVueHelper.ATTRIBUTE_MAPPING[el.tag][attr.name];
+        }
+
         return ts.factory.createJsxAttribute(
-          ts.factory.createIdentifier(attr.name),
+          ts.factory.createIdentifier(defaultName),
           ts.factory.createJsxExpression(
             undefined,
             ts.factory.createExpressionWithTypeArguments(
@@ -162,6 +175,22 @@ export default class DoricVueHelper {
           )
         );
       });
+
+      if (el.staticClass) {
+        jsxAttributes = jsxAttributes.concat(
+          ts.factory.createJsxAttribute(
+            ts.factory.createIdentifier("class"),
+            ts.factory.createJsxExpression(
+              undefined,
+              ts.factory.createExpressionWithTypeArguments(
+                ts.factory.createIdentifier(el.staticClass),
+                undefined
+              )
+            )
+          )
+        );
+      }
+
       return ts.factory.createJsxElement(
         ts.factory.createJsxOpeningElement(
           ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
