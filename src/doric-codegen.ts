@@ -1,4 +1,4 @@
-import ts from "typescript";
+import ts, { ParameterDeclaration } from "typescript";
 
 export default class DoricCodeGen {
   private static instance: DoricCodeGen;
@@ -66,14 +66,18 @@ export default class DoricCodeGen {
     );
   }
 
-  createFunction(name: string, block: ts.Block) {
+  createFunction(
+    name: string,
+    parameterDeclarations: ParameterDeclaration[],
+    block: ts.Block
+  ) {
     return ts.factory.createFunctionDeclaration(
       undefined,
       [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
       undefined,
       name,
       undefined,
-      undefined,
+      parameterDeclarations,
       undefined,
       block
     );

@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import DoricVueHelper from "./doric-vue-helper";
 import {
   parse,
   compileScript,
@@ -28,6 +29,7 @@ export async function compile(vueFile: string) {
     id: "ID_SCRIPT",
     isProd: false,
   });
+  DoricVueHelper.getInstance().setBindings(scriptBlock);
   const templateBlock = compileTemplate({
     source: descriptor.template?.content ?? "",
     filename: path.basename(vueFile),

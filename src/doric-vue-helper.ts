@@ -1,3 +1,4 @@
+import { SFCScriptBlock } from "sfc/parseComponent";
 import { ASTElement } from "types/compiler";
 import ts, { JsxElement } from "typescript";
 import DoricCodeGen from "./doric-codegen";
@@ -36,37 +37,44 @@ export default class DoricVueHelper {
     br: "Stack",
   };
 
+  scriptBlock: SFCScriptBlock;
+  setBindings(scriptBlock: SFCScriptBlock) {
+    this.scriptBlock = scriptBlock;
+  }
+
   transformVueElement(el: ASTElement) {
     if (el.parent === undefined) {
       console.log(el);
 
       let jsxRoot = this.createJsxElementRecursive(el);
-      const rootOpeningElement = ts.factory.updateJsxOpeningElement(
-        jsxRoot.openingElement,
-        jsxRoot.openingElement.tagName,
-        jsxRoot.openingElement.typeArguments,
-        ts.factory.createJsxAttributes([])
-      );
-      jsxRoot = ts.factory.updateJsxElement(
-        jsxRoot,
-        rootOpeningElement,
-        jsxRoot.children,
-        jsxRoot.closingElement
-      );
-
-      const statements = [ts.factory.createReturnStatement(jsxRoot)];
-      const block = ts.factory.createBlock(statements, true);
-      const functionDeclaration = DoricCodeGen.getInstance().createFunction(
-        "Test",
-        block
-      );
-
+      
       const importResult = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
         DoricCodeGen.getInstance().createImport(),
         DoricCodeGen.getInstance().sourceFile
       );
       console.log(importResult);
+
+      const parameterDeclarations = Object.keys(this.scriptBlock.bindings).map(
+        (key) => {
+          return ts.factory.createParameterDeclaration(
+            undefined,
+            undefined,
+            undefined,
+            key,
+            undefined,
+            ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
+          );
+        }
+      );
+
+      const statements = [ts.factory.createReturnStatement(jsxRoot)];
+      const block = ts.factory.createBlock(statements, true);
+      const functionDeclaration = DoricCodeGen.getInstance().createFunction(
+        "Test",
+        parameterDeclarations,
+        block
+      );
 
       const functionResult = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
@@ -110,16 +118,27 @@ export default class DoricVueHelper {
             ts.factory.createIdentifier("Text")
           )
         );
-      } else {
+      } else if (child.type === 2) {
         return ts.factory.createJsxElement(
           ts.factory.createJsxOpeningElement(
-            ts.factory.createIdentifier("no-implement"),
+            ts.factory.createIdentifier("Text"),
             undefined,
-            ts.factory.createJsxAttributes([])
+            ts.factory.createJsxAttributes([
+              ts.factory.createJsxAttribute(
+                ts.factory.createIdentifier("text"),
+                ts.factory.createJsxExpression(
+                  undefined,
+                  ts.factory.createExpressionWithTypeArguments(
+                    ts.factory.createIdentifier(child.tokens[0]["@binding"]),
+                    undefined
+                  )
+                )
+              ),
+            ])
           ),
           [],
           ts.factory.createJsxClosingElement(
-            ts.factory.createIdentifier("no-implement")
+            ts.factory.createIdentifier("Text")
           )
         );
       }
