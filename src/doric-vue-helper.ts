@@ -47,7 +47,7 @@ export default class DoricVueHelper {
       console.log(el);
 
       let jsxRoot = this.createJsxElementRecursive(el);
-      
+
       const importResult = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
         DoricCodeGen.getInstance().createImport(),
@@ -71,7 +71,7 @@ export default class DoricVueHelper {
       const statements = [ts.factory.createReturnStatement(jsxRoot)];
       const block = ts.factory.createBlock(statements, true);
       const functionDeclaration = DoricCodeGen.getInstance().createFunction(
-        "Test",
+        this.scriptBlock.map.sources[0].replace(/\.[^/.]+$/, ""),
         parameterDeclarations,
         block
       );
