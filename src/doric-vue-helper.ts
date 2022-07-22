@@ -1,4 +1,4 @@
-import { Root } from "postcss";
+import { Declaration, Root, Rule } from "postcss";
 import { SFCScriptBlock } from "sfc/parseComponent";
 import { ASTElement } from "types/compiler";
 import ts, { JsxElement } from "typescript";
@@ -196,6 +196,40 @@ export default class DoricVueHelper {
           )
         );
       }
+
+      // style inject
+      this.parsedRoots.forEach((root) => {
+        for (let index = 0; index < root.nodes.length; index++) {
+          const selector = (root.nodes[index] as Rule).selector;
+          const declarations = (root.nodes[index] as Rule)
+            .nodes as Declaration[];
+
+          const subSelectors = selector.split(",");
+          subSelectors.forEach((subSelector) => {
+            console.log(subSelector.trim());
+            if (subSelector.trim().startsWith("#")) {
+              // id
+              let id = undefined;
+              el.attrsList.forEach((attr) => {
+                if (attr.name === "id") {
+                  id = attr.value;
+                }
+              });
+            } else if (subSelector.trim().startsWith(".")) {
+              // class
+              if (el.staticClass) {
+              }
+            } else {
+              // tag
+            }
+          });
+
+          declarations.forEach((declaration) => {
+            declaration.prop;
+            declaration.value;
+          });
+        }
+      });
 
       return ts.factory.createJsxElement(
         ts.factory.createJsxOpeningElement(
