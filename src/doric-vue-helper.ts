@@ -1,3 +1,4 @@
+import { Root } from "postcss";
 import { SFCScriptBlock } from "sfc/parseComponent";
 import { ASTElement } from "types/compiler";
 import ts, { JsxElement } from "typescript";
@@ -31,7 +32,7 @@ export default class DoricVueHelper {
     div: "VLayout",
     h1: "Stack",
     h2: "Stack",
-    ul: "VLayout",
+    ul: "HLayout",
     li: "VLayout",
     a: "Stack",
     br: "Stack",
@@ -43,8 +44,13 @@ export default class DoricVueHelper {
   };
 
   scriptBlock: SFCScriptBlock;
-  setBindings(scriptBlock: SFCScriptBlock) {
+  setScriptBlock(scriptBlock: SFCScriptBlock) {
     this.scriptBlock = scriptBlock;
+  }
+
+  parsedRoots: Root[];
+  setParsedRoots(parsedRoots: Root[]) {
+    this.parsedRoots = parsedRoots;
   }
 
   transformVueElement(el: ASTElement) {

@@ -7,6 +7,7 @@ import {
   compileTemplate,
   compileStyle,
 } from "./vue/compiler-sfc/src";
+import postcss, { Declaration, Root, Rule } from "postcss";
 
 type AST = {
   type: number;
@@ -29,7 +30,24 @@ export async function compile(vueFile: string) {
     id: "ID_SCRIPT",
     isProd: false,
   });
-  DoricVueHelper.getInstance().setBindings(scriptBlock);
+  DoricVueHelper.getInstance().setScriptBlock(scriptBlock);
+
+  const parsedRoots: Root[] = [];
+  descriptor.styles.forEach((style, index) => {
+    const styleBlock = compileStyle({
+      source: style.content,
+      filename: `CSS_${index}`,
+      id: `ID_STYLE_${index}`,
+    });
+    const root = postcss.parse(style.content);
+    for (let index = 0; index < root.nodes.length; index++) {
+      const selector = (root.nodes[index] as Rule).selector;
+      const declarations = (root.nodes[index] as Rule).nodes as Declaration[];
+    }
+    parsedRoots.push(root);
+  });
+  DoricVueHelper.getInstance().setParsedRoots(parsedRoots);
+
   const templateBlock = compileTemplate({
     source: descriptor.template?.content ?? "",
     filename: path.basename(vueFile),
@@ -45,14 +63,6 @@ export async function compile(vueFile: string) {
         },
       ],
     },
-  });
-  descriptor.styles.forEach((style, index) => {
-    const styleBlock = compileStyle({
-      source: style.content,
-      filename: `CSS_${index}`,
-      id: `ID_STYLE_${index}`,
-    });
-    //console.log(styleBlock);
   });
   const ast = templateBlock.ast;
   if (!!ast) {
