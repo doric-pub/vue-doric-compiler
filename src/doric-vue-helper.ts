@@ -1,9 +1,17 @@
 import { Declaration, Root, Rule } from "postcss";
 import { SFCScriptBlock } from "sfc/parseComponent";
 import { ASTElement } from "types/compiler";
-import ts, { JsxElement } from "typescript";
+import ts, { JsxExpression } from "typescript";
 import DoricCodeGen from "./doric-codegen";
 const prettier = require("prettier");
+
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+}
+
+function replaceAll(str, find, replace) {
+  return str.replace(new RegExp(escapeRegExp(find), "g"), replace);
+}
 
 export default class DoricVueHelper {
   private static instance: DoricVueHelper;
@@ -29,18 +37,22 @@ export default class DoricVueHelper {
   }
 
   static TAG_MAPPING = {
-    div: "VLayout",
-    h1: "Stack",
-    h2: "Stack",
-    ul: "HLayout",
-    li: "VLayout",
-    a: "Stack",
-    br: "Stack",
-    img: "Image",
+    div: "vdiv",
+    h1: "vh1",
+    h2: "vh2",
+    ul: "vul",
+    li: "vli",
+    a: "va",
+    br: "vbr",
+    img: "vimg",
+    view: "vview",
+    text: "vtext",
   };
 
-  static ATTRIBUTE_MAPPING = {
-    img: { src: "imageUrl" },
+  static ATTRIBUTE_MAPPING = {};
+
+  static CSS_STYLE_MAPPING = {
+    "background-color": "backgroundColor",
   };
 
   scriptBlock: SFCScriptBlock;
@@ -79,7 +91,7 @@ export default class DoricVueHelper {
         }
       );
 
-      const statements = [ts.factory.createReturnStatement(jsxRoot)];
+      const statements = [ts.factory.createReturnStatement(jsxRoot as any)];
       const block = ts.factory.createBlock(statements, true);
       const functionDeclaration = DoricCodeGen.getInstance().createFunction(
         this.scriptBlock.map.sources[0].replace(/\.[^/.]+$/, ""),
@@ -95,21 +107,26 @@ export default class DoricVueHelper {
       console.log(functionResult);
 
       console.log(prettier.format(importResult + functionResult));
+
+      console.log(this.scriptBlock.content);
     }
   }
 
-  createJsxElementRecursive(el: ASTElement): JsxElement {
+  createJsxElementRecursive(el: ASTElement): ts.JsxChild {
     const children = el.children.map((child) => {
       if (child.type === 1) {
+        // ASTElement
         return this.createJsxElementRecursive(child);
       } else if (child.type === 3) {
-        if (!DoricCodeGen.getInstance().imports.includes("Text")) {
-          DoricCodeGen.getInstance().imports.push("Text");
+        // ASTText
+        const tag = "vasttext";
+        if (!DoricCodeGen.getInstance().imports.includes(tag)) {
+          DoricCodeGen.getInstance().imports.push(tag);
         }
 
         return ts.factory.createJsxElement(
           ts.factory.createJsxOpeningElement(
-            ts.factory.createIdentifier("Text"),
+            ts.factory.createIdentifier(tag),
             undefined,
             ts.factory.createJsxAttributes([
               ts.factory.createJsxAttribute(
@@ -125,14 +142,17 @@ export default class DoricVueHelper {
             ])
           ),
           [],
-          ts.factory.createJsxClosingElement(
-            ts.factory.createIdentifier("Text")
-          )
+          ts.factory.createJsxClosingElement(ts.factory.createIdentifier(tag))
         );
       } else if (child.type === 2) {
+        // ASTExpression
+        const tag = "vastexpression";
+        if (!DoricCodeGen.getInstance().imports.includes(tag)) {
+          DoricCodeGen.getInstance().imports.push(tag);
+        }
         return ts.factory.createJsxElement(
           ts.factory.createJsxOpeningElement(
-            ts.factory.createIdentifier("Text"),
+            ts.factory.createIdentifier(tag),
             undefined,
             ts.factory.createJsxAttributes([
               ts.factory.createJsxAttribute(
@@ -148,9 +168,7 @@ export default class DoricVueHelper {
             ])
           ),
           [],
-          ts.factory.createJsxClosingElement(
-            ts.factory.createIdentifier("Text")
-          )
+          ts.factory.createJsxClosingElement(ts.factory.createIdentifier(tag))
         );
       }
     });
@@ -162,22 +180,25 @@ export default class DoricVueHelper {
       }
 
       let jsxAttributes = el.attrsList.map((attr) => {
-        let defaultName = attr.name;
+        let name = attr.name;
         if (
           DoricVueHelper.ATTRIBUTE_MAPPING[el.tag] &&
           DoricVueHelper.ATTRIBUTE_MAPPING[el.tag][attr.name]
         ) {
-          defaultName = DoricVueHelper.ATTRIBUTE_MAPPING[el.tag][attr.name];
+          name = DoricVueHelper.ATTRIBUTE_MAPPING[el.tag][attr.name];
+        }
+
+        let value: ts.Expression = ts.factory.createStringLiteral(attr.value);
+        if (name == "@tap") {
+          name = "tap";
+          value = ts.factory.createIdentifier(attr.value);
         }
 
         return ts.factory.createJsxAttribute(
-          ts.factory.createIdentifier(defaultName),
+          ts.factory.createIdentifier(name),
           ts.factory.createJsxExpression(
             undefined,
-            ts.factory.createExpressionWithTypeArguments(
-              ts.factory.createStringLiteral(attr.value),
-              undefined
-            )
+            ts.factory.createExpressionWithTypeArguments(value, undefined)
           )
         );
       });
@@ -197,7 +218,7 @@ export default class DoricVueHelper {
         );
       }
 
-      // style inject
+      // declared style
       this.parsedRoots.forEach((root) => {
         for (let index = 0; index < root.nodes.length; index++) {
           const selector = (root.nodes[index] as Rule).selector;
@@ -206,7 +227,7 @@ export default class DoricVueHelper {
 
           const subSelectors = selector.split(",");
           subSelectors.forEach((subSelector) => {
-            console.log(subSelector.trim());
+            const trimedSubSelector = subSelector.trim();
             if (subSelector.trim().startsWith("#")) {
               // id
               let id = undefined;
@@ -218,30 +239,90 @@ export default class DoricVueHelper {
             } else if (subSelector.trim().startsWith(".")) {
               // class
               if (el.staticClass) {
+                if (
+                  "." + replaceAll(el.staticClass, '"', "") ==
+                  trimedSubSelector
+                ) {
+                  const propertyAssigment = declarations.map((declaration) => {
+                    return ts.factory.createPropertyAssignment(
+                      "'" + declaration.prop + "'",
+                      ts.factory.createStringLiteral(declaration.value)
+                    );
+                  });
+
+                  jsxAttributes = jsxAttributes.concat(
+                    ts.factory.createJsxAttribute(
+                      ts.factory.createIdentifier("declaredStyles"),
+                      ts.factory.createJsxExpression(
+                        undefined,
+                        ts.factory.createObjectLiteralExpression(
+                          propertyAssigment
+                        )
+                      )
+                    )
+                  );
+                }
               }
             } else {
               // tag
             }
           });
-
-          declarations.forEach((declaration) => {
-            declaration.prop;
-            declaration.value;
-          });
         }
       });
 
-      return ts.factory.createJsxElement(
-        ts.factory.createJsxOpeningElement(
-          ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
+      // static style
+      if (el.staticStyle) {
+        const styleObject = JSON.parse(el.staticStyle);
+
+        const propertyAssigment = Object.keys(styleObject).map((styleKey) => {
+          return ts.factory.createPropertyAssignment(
+            "'" + styleKey + "'",
+            ts.factory.createStringLiteral(styleObject[styleKey])
+          );
+        });
+
+        jsxAttributes = jsxAttributes.concat(
+          ts.factory.createJsxAttribute(
+            ts.factory.createIdentifier("staticStyle"),
+            ts.factory.createJsxExpression(
+              undefined,
+              ts.factory.createObjectLiteralExpression(propertyAssigment)
+            )
+          )
+        );
+      }
+
+      if (el.if) {
+        return ts.factory.createJsxExpression(undefined, ts.factory.createConditionalExpression(
+          ts.factory.createIdentifier(el.if),
           undefined,
-          ts.factory.createJsxAttributes(jsxAttributes)
-        ),
-        children,
-        ts.factory.createJsxClosingElement(
-          ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag])
-        )
-      );
+          ts.factory.createJsxElement(
+            ts.factory.createJsxOpeningElement(
+              ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
+              undefined,
+              ts.factory.createJsxAttributes(jsxAttributes)
+            ),
+            children,
+            ts.factory.createJsxClosingElement(
+              ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag])
+            )
+          ),
+          undefined,
+          ts.factory.createIdentifier("null")
+        ))
+      } else {
+        return ts.factory.createJsxElement(
+          ts.factory.createJsxOpeningElement(
+            ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
+            undefined,
+            ts.factory.createJsxAttributes(jsxAttributes)
+          ),
+          children,
+          ts.factory.createJsxClosingElement(
+            ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag])
+          )
+        );
+      }
     } else {
       return ts.factory.createJsxElement(
         ts.factory.createJsxOpeningElement(
