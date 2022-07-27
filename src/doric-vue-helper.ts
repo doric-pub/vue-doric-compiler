@@ -4,6 +4,8 @@ import { ASTElement } from "types/compiler";
 import ts from "typescript";
 import DoricCodeGen from "./doric-codegen";
 const prettier = require("prettier");
+import fs from "fs";
+import path from "path";
 
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
@@ -176,9 +178,36 @@ export default class DoricVueHelper {
       );
       console.log(functionResult);
 
-      console.log(prettier.format(importResult + functionResult));
+      const optimizedCode = prettier.format(importResult + functionResult);
+      console.log(optimizedCode);
+
+      async function mkdir() {
+        await fs.promises.mkdir(path.resolve("./generated/"));
+      }
+      if (!fs.existsSync(path.resolve("./generated/"))) {
+        mkdir();
+      }
+
+      async function writeFunction() {
+        await fs.promises.writeFile(
+          path.resolve("./generated/functions.tsx"),
+          optimizedCode,
+          "utf-8"
+        );
+      }
+      writeFunction();
 
       console.log(this.scriptBlock.content);
+
+      let self = this;
+      async function writeScript() {
+        await fs.promises.writeFile(
+          path.resolve("./generated/prop.ts"),
+          self.scriptBlock.content,
+          "utf-8"
+        );
+      }
+      writeScript();
     }
   }
 
