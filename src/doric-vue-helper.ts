@@ -79,22 +79,46 @@ export default class DoricVueHelper {
       );
       console.log(importResult);
 
-      const bindingElements = Object.keys(this.scriptBlock.bindings).map(
-        (key) => {
-          return ts.factory.createBindingElement(
-            undefined,
-            key,
-            "any",
-            undefined
-          );
+      const dataBindings = [];
+      const optionsBindings = [];
+      Object.keys(this.scriptBlock.bindings).forEach((key) => {
+        if (this.scriptBlock.bindings[key] === "data") {
+          dataBindings.push(key);
+        } else if (this.scriptBlock.bindings[key] === "options") {
+          optionsBindings.push(key);
         }
-      );
-      const propertySignature = ts.factory.createPropertySignature(
+      });
+
+      const dataBindingElements = dataBindings.map((key) => {
+        return ts.factory.createBindingElement(
+          undefined,
+          key,
+          "any",
+          undefined
+        );
+      });
+      const optionsBindingElements = optionsBindings.map((key) => {
+        return ts.factory.createBindingElement(
+          undefined,
+          key,
+          "any",
+          undefined
+        );
+      });
+
+      const dataPropertySignature = ts.factory.createPropertySignature(
         undefined,
-        "scope",
+        "data",
         undefined,
         ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
       );
+      const methodsPropertySignature = ts.factory.createPropertySignature(
+        undefined,
+        "methods",
+        undefined,
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
+      );
+
       const parameterDeclarations = [
         ts.factory.createParameterDeclaration(
           undefined,
@@ -102,21 +126,39 @@ export default class DoricVueHelper {
           undefined,
           "prop",
           undefined,
-          ts.factory.createTypeLiteralNode([propertySignature])
+          ts.factory.createTypeLiteralNode([
+            dataPropertySignature,
+            methodsPropertySignature,
+          ])
         ),
       ];
 
-      const variableStatement = ts.factory.createVariableStatement(undefined, [
-        ts.factory.createVariableDeclaration(
-          ts.factory.createObjectBindingPattern(bindingElements),
-          undefined,
-          undefined,
-          ts.factory.createIdentifier("prop.scope")
-        ),
-      ]);
+      const dataVariableStatement = ts.factory.createVariableStatement(
+        undefined,
+        [
+          ts.factory.createVariableDeclaration(
+            ts.factory.createObjectBindingPattern(dataBindingElements),
+            undefined,
+            undefined,
+            ts.factory.createIdentifier("prop.data")
+          ),
+        ]
+      );
+      const optionsVariableStatement = ts.factory.createVariableStatement(
+        undefined,
+        [
+          ts.factory.createVariableDeclaration(
+            ts.factory.createObjectBindingPattern(optionsBindingElements),
+            undefined,
+            undefined,
+            ts.factory.createIdentifier("prop.methods")
+          ),
+        ]
+      );
 
       const statements = [
-        variableStatement,
+        dataVariableStatement,
+        optionsVariableStatement,
         ts.factory.createReturnStatement(jsxRoot as any),
       ];
       const block = ts.factory.createBlock(statements, true);
@@ -230,7 +272,7 @@ export default class DoricVueHelper {
         if (name == "@tap") {
           name = "tap";
           value = ts.factory.createIdentifier(
-            `Reflect.apply(${attr.value}, prop.scope, [])`
+            `Reflect.apply(${attr.value}, prop.data, [])`
           );
         }
 
