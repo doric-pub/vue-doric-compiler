@@ -47,6 +47,7 @@ export default class DoricVueHelper {
     img: "vimg",
     view: "vview",
     text: "vtext",
+    p: "vp",
   };
 
   static ATTRIBUTE_MAPPING = {};
@@ -292,36 +293,68 @@ export default class DoricVueHelper {
         );
       }
 
+      const jsxElement = ts.factory.createJsxElement(
+        ts.factory.createJsxOpeningElement(
+          ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
+          undefined,
+          ts.factory.createJsxAttributes(jsxAttributes)
+        ),
+        children,
+        ts.factory.createJsxClosingElement(
+          ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag])
+        )
+      );
       if (el.if) {
-        return ts.factory.createJsxExpression(undefined, ts.factory.createConditionalExpression(
-          ts.factory.createIdentifier(el.if),
+        return ts.factory.createJsxExpression(
           undefined,
-          ts.factory.createJsxElement(
-            ts.factory.createJsxOpeningElement(
-              ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
-              undefined,
-              ts.factory.createJsxAttributes(jsxAttributes)
-            ),
-            children,
-            ts.factory.createJsxClosingElement(
-              ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag])
-            )
-          ),
-          undefined,
-          ts.factory.createIdentifier("null")
-        ))
-      } else {
-        return ts.factory.createJsxElement(
-          ts.factory.createJsxOpeningElement(
-            ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag]),
+          ts.factory.createConditionalExpression(
+            ts.factory.createIdentifier(el.if),
             undefined,
-            ts.factory.createJsxAttributes(jsxAttributes)
-          ),
-          children,
-          ts.factory.createJsxClosingElement(
-            ts.factory.createIdentifier(DoricVueHelper.TAG_MAPPING[el.tag])
+            jsxElement,
+            undefined,
+            ts.factory.createIdentifier("null")
           )
         );
+      } else if (el.for) {
+        return ts.factory.createJsxExpression(
+          undefined,
+          ts.factory.createCallExpression(
+            ts.factory.createPropertyAccessExpression(
+              ts.factory.createIdentifier(el.for),
+              "map"
+            ),
+            undefined,
+            [
+              ts.factory.createArrowFunction(
+                undefined,
+                undefined,
+                [
+                  ts.factory.createParameterDeclaration(
+                    undefined,
+                    undefined,
+                    undefined,
+                    el.alias,
+                    undefined,
+                    ts.factory.createTypeReferenceNode("any")
+                  ),
+                  ts.factory.createParameterDeclaration(
+                    undefined,
+                    undefined,
+                    undefined,
+                    el.iterator1,
+                    undefined,
+                    ts.factory.createTypeReferenceNode("number")
+                  ),
+                ],
+                undefined,
+                undefined,
+                jsxElement
+              ),
+            ]
+          )
+        );
+      } else {
+        return jsxElement;
       }
     } else {
       return ts.factory.createJsxElement(
