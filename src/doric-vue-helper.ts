@@ -295,6 +295,26 @@ export default class DoricVueHelper {
           const subSelectors = selector.split(",");
           subSelectors.forEach((subSelector) => {
             const trimedSubSelector = subSelector.trim();
+
+            const injectDeclareStyleFunction = () => {
+              const propertyAssigment = declarations.map((declaration) => {
+                return ts.factory.createPropertyAssignment(
+                  "'" + declaration.prop + "'",
+                  ts.factory.createStringLiteral(declaration.value)
+                );
+              });
+
+              jsxAttributes = jsxAttributes.concat(
+                ts.factory.createJsxAttribute(
+                  ts.factory.createIdentifier("declaredStyle"),
+                  ts.factory.createJsxExpression(
+                    undefined,
+                    ts.factory.createObjectLiteralExpression(propertyAssigment)
+                  )
+                )
+              );
+            };
+
             if (subSelector.trim().startsWith("#")) {
               // id
               let id = undefined;
@@ -303,6 +323,12 @@ export default class DoricVueHelper {
                   id = attr.value;
                 }
               });
+
+              if (id) {
+                if ("#" + replaceAll(id, '"', "") == trimedSubSelector) {
+                  injectDeclareStyleFunction();
+                }
+              }
             } else if (subSelector.trim().startsWith(".")) {
               // class
               if (el.staticClass) {
@@ -310,28 +336,14 @@ export default class DoricVueHelper {
                   "." + replaceAll(el.staticClass, '"', "") ==
                   trimedSubSelector
                 ) {
-                  const propertyAssigment = declarations.map((declaration) => {
-                    return ts.factory.createPropertyAssignment(
-                      "'" + declaration.prop + "'",
-                      ts.factory.createStringLiteral(declaration.value)
-                    );
-                  });
-
-                  jsxAttributes = jsxAttributes.concat(
-                    ts.factory.createJsxAttribute(
-                      ts.factory.createIdentifier("declaredStyle"),
-                      ts.factory.createJsxExpression(
-                        undefined,
-                        ts.factory.createObjectLiteralExpression(
-                          propertyAssigment
-                        )
-                      )
-                    )
-                  );
+                  injectDeclareStyleFunction();
                 }
               }
             } else {
               // tag
+              if (el.tag == trimedSubSelector) {
+                injectDeclareStyleFunction();
+              }
             }
           });
         }
