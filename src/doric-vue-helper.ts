@@ -1,7 +1,7 @@
 import { Declaration, Root, Rule } from "postcss";
 import { SFCScriptBlock } from "sfc/parseComponent";
 import { ASTElement } from "types/compiler";
-import ts, { JsxExpression } from "typescript";
+import ts from "typescript";
 import DoricCodeGen from "./doric-codegen";
 const prettier = require("prettier");
 
@@ -79,22 +79,49 @@ export default class DoricVueHelper {
       );
       console.log(importResult);
 
-      const parameterDeclarations = Object.keys(this.scriptBlock.bindings).map(
+      const bindingElements = Object.keys(this.scriptBlock.bindings).map(
         (key) => {
-          return ts.factory.createParameterDeclaration(
-            undefined,
-            undefined,
+          return ts.factory.createBindingElement(
             undefined,
             key,
-            undefined,
-            ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
+            "any",
+            undefined
           );
         }
       );
+      const propertySignature = ts.factory.createPropertySignature(
+        undefined,
+        "scope",
+        undefined,
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
+      );
+      const parameterDeclarations = [
+        ts.factory.createParameterDeclaration(
+          undefined,
+          undefined,
+          undefined,
+          "prop",
+          undefined,
+          ts.factory.createTypeLiteralNode([propertySignature])
+        ),
+      ];
 
-      const statements = [ts.factory.createReturnStatement(jsxRoot as any)];
+      const variableStatement = ts.factory.createVariableStatement(undefined, [
+        ts.factory.createVariableDeclaration(
+          ts.factory.createObjectBindingPattern(bindingElements),
+          undefined,
+          undefined,
+          ts.factory.createIdentifier("prop.scope")
+        ),
+      ]);
+
+      const statements = [
+        variableStatement,
+        ts.factory.createReturnStatement(jsxRoot as any),
+      ];
       const block = ts.factory.createBlock(statements, true);
       const functionDeclaration = DoricCodeGen.getInstance().createFunction(
+        // use file name as function name
         this.scriptBlock.map.sources[0].replace(/\.[^/.]+$/, ""),
         parameterDeclarations,
         block
@@ -202,7 +229,9 @@ export default class DoricVueHelper {
         let value: ts.Expression = ts.factory.createStringLiteral(attr.value);
         if (name == "@tap") {
           name = "tap";
-          value = ts.factory.createIdentifier(attr.value);
+          value = ts.factory.createIdentifier(
+            `Reflect.apply(${attr.value}, prop.scope, [])`
+          );
         }
 
         return ts.factory.createJsxAttribute(
@@ -213,21 +242,6 @@ export default class DoricVueHelper {
           )
         );
       });
-
-      if (el.staticClass) {
-        jsxAttributes = jsxAttributes.concat(
-          ts.factory.createJsxAttribute(
-            ts.factory.createIdentifier("class"),
-            ts.factory.createJsxExpression(
-              undefined,
-              ts.factory.createExpressionWithTypeArguments(
-                ts.factory.createIdentifier(el.staticClass),
-                undefined
-              )
-            )
-          )
-        );
-      }
 
       // declared style
       this.parsedRoots.forEach((root) => {
@@ -263,7 +277,7 @@ export default class DoricVueHelper {
 
                   jsxAttributes = jsxAttributes.concat(
                     ts.factory.createJsxAttribute(
-                      ts.factory.createIdentifier("declaredStyles"),
+                      ts.factory.createIdentifier("declaredStyle"),
                       ts.factory.createJsxExpression(
                         undefined,
                         ts.factory.createObjectLiteralExpression(
@@ -345,7 +359,7 @@ export default class DoricVueHelper {
                     undefined,
                     el.alias,
                     undefined,
-                    ts.factory.createTypeReferenceNode("any")
+                    ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
                   ),
                   ts.factory.createParameterDeclaration(
                     undefined,
@@ -353,7 +367,9 @@ export default class DoricVueHelper {
                     undefined,
                     el.iterator1,
                     undefined,
-                    ts.factory.createTypeReferenceNode("number")
+                    ts.factory.createKeywordTypeNode(
+                      ts.SyntaxKind.NumberKeyword
+                    )
                   ),
                 ],
                 undefined,
