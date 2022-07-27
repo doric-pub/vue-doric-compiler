@@ -151,6 +151,16 @@ export default class DoricVueHelper {
         if (!DoricCodeGen.getInstance().imports.includes(tag)) {
           DoricCodeGen.getInstance().imports.push(tag);
         }
+
+        let identifier = "";
+        child.tokens.forEach((token) => {
+          if (token["@binding"]) {
+            identifier += token["@binding"];
+          } else {
+            identifier += ' + "' + token + '" + ';
+          }
+        });
+
         return ts.factory.createJsxElement(
           ts.factory.createJsxOpeningElement(
             ts.factory.createIdentifier(tag),
@@ -161,7 +171,7 @@ export default class DoricVueHelper {
                 ts.factory.createJsxExpression(
                   undefined,
                   ts.factory.createExpressionWithTypeArguments(
-                    ts.factory.createIdentifier(child.tokens[0]["@binding"]),
+                    ts.factory.createIdentifier(identifier),
                     undefined
                   )
                 )
