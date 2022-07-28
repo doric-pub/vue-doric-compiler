@@ -39,17 +39,17 @@ export default class DoricVueHelper {
   }
 
   static TAG_MAPPING = {
-    div: "vdiv",
-    h1: "vh1",
-    h2: "vh2",
-    ul: "vul",
-    li: "vli",
-    a: "va",
-    br: "vbr",
-    img: "vimg",
-    view: "vview",
-    text: "vtext",
-    p: "vp",
+    div: "Vdiv",
+    h1: "Vh1",
+    h2: "Vh2",
+    ul: "Vul",
+    li: "Vli",
+    a: "Va",
+    br: "Vbr",
+    img: "Vimg",
+    view: "Vview",
+    text: "Vtext",
+    p: "Vp",
   };
 
   static ATTRIBUTE_MAPPING = {};
@@ -74,12 +74,19 @@ export default class DoricVueHelper {
 
       let jsxRoot = this.createJsxElementRecursive(el);
 
-      const importResult = DoricCodeGen.getInstance().printer.printNode(
+      const doricImportResult = DoricCodeGen.getInstance().printer.printNode(
         ts.EmitHint.Unspecified,
-        DoricCodeGen.getInstance().createImport(),
+        DoricCodeGen.getInstance().createDoricImport(),
         DoricCodeGen.getInstance().sourceFile
       );
-      console.log(importResult);
+      console.log(doricImportResult);
+      const doricVueRuntimeImportResult =
+        DoricCodeGen.getInstance().printer.printNode(
+          ts.EmitHint.Unspecified,
+          DoricCodeGen.getInstance().createDoricVueRuntimeImport(),
+          DoricCodeGen.getInstance().sourceFile
+        );
+      console.log(doricVueRuntimeImportResult);
 
       const dataBindings = [];
       const optionsBindings = [];
@@ -178,7 +185,9 @@ export default class DoricVueHelper {
       );
       console.log(functionResult);
 
-      const optimizedCode = prettier.format(importResult + functionResult);
+      const optimizedCode = prettier.format(
+        doricImportResult + doricVueRuntimeImportResult + functionResult
+      );
       console.log(optimizedCode);
 
       async function mkdir() {
@@ -219,8 +228,8 @@ export default class DoricVueHelper {
       } else if (child.type === 3) {
         // ASTText
         const tag = "vasttext";
-        if (!DoricCodeGen.getInstance().imports.includes(tag)) {
-          DoricCodeGen.getInstance().imports.push(tag);
+        if (!DoricCodeGen.getInstance().doricVueRuntimeImports.includes(tag)) {
+          DoricCodeGen.getInstance().doricVueRuntimeImports.push(tag);
         }
 
         return ts.factory.createJsxElement(
@@ -246,8 +255,8 @@ export default class DoricVueHelper {
       } else if (child.type === 2) {
         // ASTExpression
         const tag = "vastexpression";
-        if (!DoricCodeGen.getInstance().imports.includes(tag)) {
-          DoricCodeGen.getInstance().imports.push(tag);
+        if (!DoricCodeGen.getInstance().doricVueRuntimeImports.includes(tag)) {
+          DoricCodeGen.getInstance().doricVueRuntimeImports.push(tag);
         }
 
         let identifier = "";
@@ -284,8 +293,8 @@ export default class DoricVueHelper {
 
     if (DoricVueHelper.TAG_MAPPING[el.tag]) {
       const key = DoricVueHelper.TAG_MAPPING[el.tag];
-      if (!DoricCodeGen.getInstance().imports.includes(key)) {
-        DoricCodeGen.getInstance().imports.push(key);
+      if (!DoricCodeGen.getInstance().doricVueRuntimeImports.includes(key)) {
+        DoricCodeGen.getInstance().doricVueRuntimeImports.push(key);
       }
 
       let jsxAttributes = el.attrsList.map((attr) => {

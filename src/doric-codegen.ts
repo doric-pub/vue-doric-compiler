@@ -34,10 +34,41 @@ export default class DoricCodeGen {
     newLine: ts.NewLineKind.LineFeed,
   });
 
-  imports: Array<string> = ["jsx"];
+  doricVueRuntimeImports: Array<string> = [];
+  doricImports = ["jsx"];
 
-  createImport() {
-    const importSpecifiers = this.imports.map((value) => {
+  createDoricVueRuntimeImport() {
+    const importSpecifiers = this.doricVueRuntimeImports.map((value) => {
+      return ts.factory.createImportSpecifier(
+        false,
+        undefined,
+        ts.factory.createIdentifier(value)
+      );
+    });
+
+    const importClause = ts.factory.createImportClause(
+      false,
+      undefined,
+      ts.factory.createNamedImports(importSpecifiers)
+    );
+
+    return ts.factory.updateImportDeclaration(
+      ts.factory.createImportDeclaration(
+        undefined,
+        undefined,
+        importClause,
+        undefined
+      ),
+      undefined,
+      undefined,
+      importClause,
+      ts.factory.createStringLiteral("doric-vue-runtime"),
+      undefined
+    );
+  }
+
+  createDoricImport() {
+    const importSpecifiers = this.doricImports.map((value) => {
       return ts.factory.createImportSpecifier(
         false,
         undefined,
