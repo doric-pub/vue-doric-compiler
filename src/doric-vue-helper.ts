@@ -101,16 +101,16 @@ export default class DoricVueHelper {
       const dataBindingElements = dataBindings.map((key) => {
         return ts.factory.createBindingElement(
           undefined,
+          undefined,
           key,
-          "any",
           undefined
         );
       });
       const optionsBindingElements = optionsBindings.map((key) => {
         return ts.factory.createBindingElement(
           undefined,
+          undefined,
           key,
-          "any",
           undefined
         );
       });
@@ -171,9 +171,13 @@ export default class DoricVueHelper {
         ts.factory.createReturnStatement(jsxRoot as any),
       ];
       const block = ts.factory.createBlock(statements, true);
+      const functionName = this.scriptBlock.map.sources[0].replace(
+        /\.[^/.]+$/,
+        ""
+      );
       const functionDeclaration = DoricCodeGen.getInstance().createFunction(
         // use file name as function name
-        this.scriptBlock.map.sources[0].replace(/\.[^/.]+$/, ""),
+        functionName,
         parameterDeclarations,
         block
       );
@@ -199,7 +203,7 @@ export default class DoricVueHelper {
 
       async function writeFunction() {
         await fs.promises.writeFile(
-          path.resolve("./generated/functions.tsx"),
+          path.resolve(`./generated/${functionName}.tsx`),
           optimizedCode,
           "utf-8"
         );
@@ -211,7 +215,7 @@ export default class DoricVueHelper {
       let self = this;
       async function writeScript() {
         await fs.promises.writeFile(
-          path.resolve("./generated/prop.ts"),
+          path.resolve(`./generated/${functionName}Prop.ts`),
           self.scriptBlock.content,
           "utf-8"
         );
@@ -227,7 +231,7 @@ export default class DoricVueHelper {
         return this.createJsxElementRecursive(child);
       } else if (child.type === 3) {
         // ASTText
-        const tag = "vasttext";
+        const tag = "Vasttext";
         if (!DoricCodeGen.getInstance().doricVueRuntimeImports.includes(tag)) {
           DoricCodeGen.getInstance().doricVueRuntimeImports.push(tag);
         }
@@ -254,7 +258,7 @@ export default class DoricVueHelper {
         );
       } else if (child.type === 2) {
         // ASTExpression
-        const tag = "vastexpression";
+        const tag = "Vastexpression";
         if (!DoricCodeGen.getInstance().doricVueRuntimeImports.includes(tag)) {
           DoricCodeGen.getInstance().doricVueRuntimeImports.push(tag);
         }
@@ -310,7 +314,11 @@ export default class DoricVueHelper {
         if (name == "@tap") {
           name = "tap";
           value = ts.factory.createIdentifier(
-            `Reflect.apply(${attr.value}, prop.data, [])`
+            `
+              () => {
+                Reflect.apply(${attr.value}, prop.data, [])
+              }
+            `
           );
         }
 
