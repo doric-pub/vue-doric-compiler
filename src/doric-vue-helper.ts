@@ -52,12 +52,6 @@ export default class DoricVueHelper {
     p: "Vp",
   };
 
-  static ATTRIBUTE_MAPPING = {};
-
-  static CSS_STYLE_MAPPING = {
-    "background-color": "backgroundColor",
-  };
-
   scriptBlock: SFCScriptBlock;
   setScriptBlock(scriptBlock: SFCScriptBlock) {
     this.scriptBlock = scriptBlock;
@@ -303,12 +297,6 @@ export default class DoricVueHelper {
 
       let jsxAttributes = el.attrsList.map((attr) => {
         let name = attr.name;
-        if (
-          DoricVueHelper.ATTRIBUTE_MAPPING[el.tag] &&
-          DoricVueHelper.ATTRIBUTE_MAPPING[el.tag][attr.name]
-        ) {
-          name = DoricVueHelper.ATTRIBUTE_MAPPING[el.tag][attr.name];
-        }
 
         let value: ts.Expression = ts.factory.createStringLiteral(attr.value);
         if (name == "@tap") {
@@ -412,6 +400,18 @@ export default class DoricVueHelper {
             ts.factory.createJsxExpression(
               undefined,
               ts.factory.createObjectLiteralExpression(propertyAssigment)
+            )
+          )
+        );
+      }
+
+      if (el.classBinding) {
+        jsxAttributes = jsxAttributes.concat(
+          ts.factory.createJsxAttribute(
+            ts.factory.createIdentifier("declaredStyle"),
+            ts.factory.createJsxExpression(
+              undefined,
+              ts.factory.createIdentifier(`genStyle(${el.classBinding})`)
             )
           )
         );
