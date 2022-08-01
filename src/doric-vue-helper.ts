@@ -53,13 +53,50 @@ export default class DoricVueHelper {
   };
 
   scriptBlock: SFCScriptBlock;
+  componentName: string;
   setScriptBlock(scriptBlock: SFCScriptBlock) {
     this.scriptBlock = scriptBlock;
+    this.componentName = this.scriptBlock.map.sources[0].replace(
+      /\.[^/.]+$/,
+      ""
+    );
   }
 
   parsedRoots: Root[];
   setParsedRoots(parsedRoots: Root[]) {
     this.parsedRoots = parsedRoots;
+    const stylesMap: Record<string, any> = {};
+    this.parsedRoots.forEach((root) => {
+      for (let index = 0; index < root.nodes.length; index++) {
+        const selector = (root.nodes[index] as Rule).selector;
+        const declarations = (root.nodes[index] as Rule).nodes as Declaration[];
+
+        const subSelectors = selector.split(",");
+        subSelectors.forEach((subSelector) => {
+          const trimedSubSelector = subSelector.trim();
+
+          let declarationMap = {};
+          declarations.forEach((declaration) => {
+            declarationMap[declaration.prop] = declaration.value;
+          });
+          stylesMap[trimedSubSelector] = declarationMap;
+        });
+      }
+    });
+
+    console.log(stylesMap);
+
+    let self = this;
+    async function writeStyles() {
+      await fs.promises.writeFile(
+        path.resolve(`./generated/${self.componentName}Style.ts`),
+        prettier.format(
+          "export const styles = " + JSON.stringify(stylesMap, undefined, 2)
+        ),
+        "utf-8"
+      );
+    }
+    writeStyles();
   }
 
   transformVueElement(el: ASTElement) {
@@ -165,13 +202,9 @@ export default class DoricVueHelper {
         ts.factory.createReturnStatement(jsxRoot as any),
       ];
       const block = ts.factory.createBlock(statements, true);
-      const functionName = this.scriptBlock.map.sources[0].replace(
-        /\.[^/.]+$/,
-        ""
-      );
       const functionDeclaration = DoricCodeGen.getInstance().createFunction(
         // use file name as function name
-        functionName,
+        this.componentName,
         parameterDeclarations,
         block
       );
@@ -195,9 +228,10 @@ export default class DoricVueHelper {
         mkdir();
       }
 
+      let self = this;
       async function writeFunction() {
         await fs.promises.writeFile(
-          path.resolve(`./generated/${functionName}.tsx`),
+          path.resolve(`./generated/${self.componentName}.tsx`),
           optimizedCode,
           "utf-8"
         );
@@ -206,10 +240,9 @@ export default class DoricVueHelper {
 
       console.log(this.scriptBlock.content);
 
-      let self = this;
       async function writeScript() {
         await fs.promises.writeFile(
-          path.resolve(`./generated/${functionName}Prop.ts`),
+          path.resolve(`./generated/${self.componentName}Prop.ts`),
           self.scriptBlock.content,
           "utf-8"
         );
@@ -320,6 +353,7 @@ export default class DoricVueHelper {
       });
 
       // declared style
+
       this.parsedRoots.forEach((root) => {
         for (let index = 0; index < root.nodes.length; index++) {
           const selector = (root.nodes[index] as Rule).selector;
