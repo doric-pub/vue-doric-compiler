@@ -91,7 +91,7 @@ export default class DoricVueHelper {
       await fs.promises.writeFile(
         path.resolve(`./generated/${self.componentName}Style.ts`),
         prettier.format(
-          "export const styles = " + JSON.stringify(stylesMap, undefined, 2)
+          "export default " + JSON.stringify(stylesMap, undefined, 2)
         ),
         "utf-8"
       );
@@ -158,6 +158,12 @@ export default class DoricVueHelper {
         undefined,
         ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
       );
+      const stylePropertySignature = ts.factory.createPropertySignature(
+        undefined,
+        "style",
+        undefined,
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
+      );
 
       const parameterDeclarations = [
         ts.factory.createParameterDeclaration(
@@ -169,6 +175,7 @@ export default class DoricVueHelper {
           ts.factory.createTypeLiteralNode([
             dataPropertySignature,
             methodsPropertySignature,
+            stylePropertySignature,
           ])
         ),
       ];
@@ -195,10 +202,22 @@ export default class DoricVueHelper {
           ),
         ]
       );
+      const styleVariableStatement = ts.factory.createVariableStatement(
+        undefined,
+        [
+          ts.factory.createVariableDeclaration(
+            "style",
+            undefined,
+            undefined,
+            ts.factory.createIdentifier("prop.style")
+          ),
+        ]
+      );
 
       const statements = [
         dataVariableStatement,
         optionsVariableStatement,
+        styleVariableStatement,
         ts.factory.createReturnStatement(jsxRoot as any),
       ];
       const block = ts.factory.createBlock(statements, true);
@@ -216,8 +235,31 @@ export default class DoricVueHelper {
       );
       console.log(functionResult);
 
+      const genStyleFunctionCode = `
+        function genStyle(
+          style: Record<string, any>,
+          classSelector: Record<string, boolean>
+        ) {
+          let result: Record<string, string> = {};
+          Object.keys(classSelector).forEach((selector) => {
+            if (
+              Object.keys(style).includes("." + selector) &&
+              classSelector[selector]
+            ) {
+              Object.keys(style["." + selector]).forEach((key) => {
+                result[key] = style["." + selector][key];
+              });
+            }
+          });
+          return result;
+        }
+      `;
+
       const optimizedCode = prettier.format(
-        doricImportResult + doricVueRuntimeImportResult + functionResult
+        doricImportResult +
+          doricVueRuntimeImportResult +
+          genStyleFunctionCode +
+          functionResult
       );
       console.log(optimizedCode);
 
@@ -445,7 +487,7 @@ export default class DoricVueHelper {
             ts.factory.createIdentifier("declaredStyle"),
             ts.factory.createJsxExpression(
               undefined,
-              ts.factory.createIdentifier(`genStyle(${el.classBinding})`)
+              ts.factory.createIdentifier(`genStyle(style, ${el.classBinding})`)
             )
           )
         );

@@ -3,7 +3,7 @@
     <view @tap="click" class="abc">
       <text style="color: green;font-size: 50px;">{{ !a ? '打开': '关闭'}}</text>
     </view>
-    <view :class="{'active': isActive, 'error': isError}"></view>
+    <view @tap="change" :class="{'active': isActive, 'error': isError}"></view>
     <view v-if="a">
       <text style="color: #ff4800;font-size: 50px;">11111</text>
     </view>
@@ -24,6 +24,10 @@ export default {
   methods: {
     click() {
       this.a = !this.a
+    },
+    change() {
+      this.isActive = !this.isActive
+      this.isError = !this.isError
     }
   }
 }
@@ -34,5 +38,13 @@ export default {
   background-color: #f0cc00;
 }
 .active {
+  background-color: #0000ff;
+  width: 100px;
+  height: 100px;
+}
+.error {
+  background-color: #ff0000;
+  width: 150px;
+  height: 150px;
 }
 </style>
